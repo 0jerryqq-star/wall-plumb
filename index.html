@@ -103,9 +103,14 @@ summary{font-size:16px;font-weight:700;padding:12px 0;cursor:pointer}
 .wl{stroke:var(--ink);stroke-width:5;stroke-linecap:round}
 .wl.ok{stroke:var(--ok)}.wl.warn{stroke:var(--warn)}.wl.bad{stroke:var(--bad)}
 @media (prefers-reduced-motion:reduce){.readout{transition:none}}
+.landscape{display:none}
+@media (orientation:landscape) and (max-height:520px){
+  .landscape{display:flex;position:fixed;inset:0;z-index:10;background:var(--bg);color:var(--ink);align-items:center;justify-content:center;text-align:center;padding:24px;font-size:20px;font-weight:700;line-height:1.6}
+}
 </style>
 </head>
 <body>
+<div class="landscape" role="alert">請把手機轉回直向使用<br>（建議開啟控制中心的「直向鎖定」）</div>
 <main>
   <header class="top">
     <h1>測量牆板垂直</h1>
@@ -233,7 +238,7 @@ summary{font-size:16px;font-weight:700;padding:12px 0;cursor:pointer}
   function current(){
     var s=avg(buf); if(!s) return null;
     var z=cfg.zero||{phi:0,psi:0};
-    return {phi:s.phi-z.phi, psi:s.psi-z.psi, psiRaw:s.psi, up:s.up, sd:s.sd};
+    return {phi:s.phi-z.phi, psi:s.psi-z.psi, phiRaw:s.phi, psiRaw:s.psi, up:s.up, sd:s.sd};
   }
   function fmt(n,d){d=d==null?1:d; var p=Math.pow(10,d); return (Math.round(n*p)/p).toFixed(d);}
   function evalR(r){
@@ -253,7 +258,8 @@ summary{font-size:16px;font-weight:700;padding:12px 0;cursor:pointer}
     var e=evalR(r);
     var w='';
     if(!locked){
-      if(r.up<0) w='手機拿反了，請讓手機頂端朝上。';
+      if(Math.abs(r.phiRaw)>45) w='手機打橫了，這個 App 只能直向使用，請讓手機直立、頂端朝上。';
+      else if(r.up<0) w='手機拿反了，請讓手機頂端朝上。';
       else if(Math.abs(r.psiRaw)>60) w='手機是平放的，請直立綁在直尺側面。';
       else if(Math.abs(r.psiRaw)>25) w='手機沒有站直，請確認螢幕跟牆面垂直。';
     }

@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>測量牆板垂直</title>
+<meta name="theme-color" content="#1F5FD1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="牆板垂直">
+<!--PWA-->
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<!--/PWA-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#DADDDE; --panel:#EEF0F0; --ink:#14181A; --ink2:#4A5357; --line:#B4BBBE;
+  --chalk:#1F5FD1; --ok:#23803A; --warn:#A06D00; --bad:#BF2F27; --wall:#8E979B;
+  --okbg:#D3ECD9; --warnbg:#F5E5BE; --badbg:#F5D3CF;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#181B1D; --panel:#22272A; --ink:#EDF0F1; --ink2:#A3ADB2; --line:#3A4146;
+    --chalk:#5B92F0; --ok:#4CC26A; --warn:#E3AE2E; --bad:#F06A5F; --wall:#5E676C;
+    --okbg:#163522; --warnbg:#3A2E10; --badbg:#3E1A17;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#181B1D; --panel:#22272A; --ink:#EDF0F1; --ink2:#A3ADB2; --line:#3A4146;
+  --chalk:#5B92F0; --ok:#4CC26A; --warn:#E3AE2E; --bad:#F06A5F; --wall:#5E676C;
+  --okbg:#163522; --warnbg:#3A2E10; --badbg:#3E1A17;
+}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:"Noto Sans TC",-apple-system,"PingFang TC","Microsoft JhengHei",system-ui,sans-serif;-webkit-text-size-adjust:100%}
+[hidden]{display:none!important}
+.num{font-family:"Barlow Condensed","Noto Sans TC",-apple-system,system-ui,sans-serif;font-variant-numeric:tabular-nums}
+main{max-width:520px;margin:0 auto;padding:10px 14px 36px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:4px 0 12px}
+h1{font-size:19px;font-weight:700;margin:0;letter-spacing:.03em}
+h2{font-size:16px;font-weight:700;margin:0}
+.chip{font-size:13px;padding:3px 10px;border-radius:999px;border:1.5px solid var(--line);color:var(--ink2);white-space:nowrap}
+.chip.on{border-color:var(--chalk);color:var(--chalk)}
+.chip.attn{border-color:var(--warn);color:var(--warn)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+.card p{margin:0 0 12px;line-height:1.65;font-size:15px;color:var(--ink2)}
+.warn{background:var(--warnbg);color:var(--ink);border-left:4px solid var(--warn);border-radius:0;padding:10px 12px;margin:0 0 12px;font-size:14px;line-height:1.55}
+.readout{border-radius:16px;padding:12px 16px 12px;background:var(--panel);border:2px solid var(--line);transition:background-color .2s,border-color .2s}
+.readout[data-status="ok"]{background:var(--okbg);border-color:var(--ok)}
+.readout[data-status="warn"]{background:var(--warnbg);border-color:var(--warn)}
+.readout[data-status="bad"]{background:var(--badbg);border-color:var(--bad)}
+.readout.locked{border-style:dashed}
+.rlabel{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:14px;color:var(--ink2)}
+.st{font-weight:700;font-size:16px}
+[data-status="ok"] .st{color:var(--ok)}
+[data-status="warn"] .st{color:var(--warn)}
+[data-status="bad"] .st{color:var(--bad)}
+.big{font-weight:700;font-size:clamp(66px,23vw,116px);line-height:.95;margin:6px 0 4px;letter-spacing:-.01em}
+.big .unit{font-size:.3em;font-weight:500;margin-left:6px;color:var(--ink2)}
+.dir{font-size:19px;font-weight:700}
+.hint{font-size:15px;color:var(--ink2);min-height:1.5em;margin-top:2px}
+.meta{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:8px;font-size:14px;color:var(--ink2);align-items:baseline}
+.meta .num{font-size:21px;color:var(--ink)}
+.gauge{margin:12px 0 0}
+.gauge svg{display:block;width:100%;height:auto;max-height:30vh}
+figcaption{font-size:12.5px;color:var(--ink2);text-align:center;margin-top:4px}
+.inplane{font-size:14px;color:var(--ink2);margin:10px 2px 0}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.btn{font:inherit;font-size:17px;font-weight:700;min-height:56px;border-radius:12px;border:2px solid var(--ink);background:transparent;color:var(--ink);padding:0 14px;touch-action:manipulation;cursor:pointer}
+.btn.primary{background:var(--chalk);border-color:var(--chalk);color:#fff}
+.btn.ghost{border-color:var(--line);font-size:15px;min-height:48px;width:100%}
+.btn:disabled{opacity:.5}
+.btn:focus-visible,input:focus-visible,.seg button:focus-visible,.link:focus-visible,summary:focus-visible{outline:3px solid var(--chalk);outline-offset:2px}
+.recordRow{display:grid;grid-template-columns:1fr auto;gap:10px;margin-top:10px}
+.recordRow .btn{min-width:96px}
+input{font:inherit;font-size:16px;min-height:56px;border-radius:12px;border:2px solid var(--line);background:var(--panel);color:var(--ink);padding:0 12px;width:100%}
+.records{margin-top:24px}
+.rhead{display:flex;justify-content:space-between;align-items:center}
+.link{font:inherit;font-size:15px;background:none;border:none;color:var(--chalk);padding:8px 6px;cursor:pointer}
+.link.danger{color:var(--bad)}
+#recList{list-style:none;margin:6px 0 0;padding:0}
+#recList li{display:grid;grid-template-columns:4.2em 1fr;gap:4px 12px;align-items:baseline;padding:10px 2px;border-bottom:1px solid var(--line);font-size:14px}
+.rmm{font-size:24px;font-weight:700;grid-row:span 2}
+.rmm.ok{color:var(--ok)}.rmm.warn{color:var(--warn)}.rmm.bad{color:var(--bad)}
+.rloc{font-weight:500}
+.rsub{color:var(--ink2);font-size:13px}
+.empty{color:var(--ink2);font-size:14px;margin:8px 0 0}
+.settings{margin-top:22px;border-top:1px solid var(--line);padding-top:4px}
+summary{font-size:16px;font-weight:700;padding:12px 0;cursor:pointer}
+.settings label,.field{display:block;font-size:14px;color:var(--ink2);margin:10px 0}
+.settings input{margin-top:6px}
+.seg{display:grid;grid-template-columns:1fr 1fr;margin-top:6px;border:2px solid var(--ink);border-radius:12px;overflow:hidden}
+.seg button{font:inherit;font-size:16px;min-height:48px;border:none;background:transparent;color:var(--ink);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg);font-weight:700}
+.note{font-size:13px;color:var(--ink2);line-height:1.65}
+.cone{fill:var(--okbg);stroke:var(--ok);stroke-width:1}
+.plumb{stroke:var(--chalk);stroke-width:2}
+.bob{fill:var(--chalk)}
+.wl{stroke:var(--ink);stroke-width:5;stroke-linecap:round}
+.wl.ok{stroke:var(--ok)}.wl.warn{stroke:var(--warn)}.wl.bad{stroke:var(--bad)}
+@media (prefers-reduced-motion:reduce){.readout{transition:none}}
+</style>
+</head>
+<body>
+<main>
+  <header class="top">
+    <h1>測量牆板垂直</h1>
+    <span class="chip attn" id="calChip">未校正</span>
+  </header>
+
+  <section class="card" id="startCard">
+    <p>手機直立綁在直尺側面，螢幕跟牆面垂直，直尺整條貼緊牆板。第一次使用請先對著鉛錘線或雷射垂直線做歸零校正。</p>
+    <button class="btn primary" id="startBtn" style="width:100%">開始量測</button>
+  </section>
+
+  <p class="warn" id="warn" hidden></p>
+
+  <section class="card" id="calPanel" hidden>
+    <p>把直尺貼在鉛錘線或雷射垂直線上，扶穩不要動，再按「開始校正」。會取 2 秒的平均值當作零點。</p>
+    <div class="actions" style="margin-top:0">
+      <button class="btn" id="calCancel">取消</button>
+      <button class="btn primary" id="calGo">開始校正</button>
+    </div>
+  </section>
+
+  <section class="readout" id="readout" data-status="idle" aria-live="polite">
+    <div class="rlabel"><span>牆高 <span id="hLbl">3000</span> mm 頂端偏差<span id="lockTag" hidden>（已鎖定）</span></span><span class="st" id="st"></span></div>
+    <div class="big num"><span id="mm">--</span><span class="unit">mm</span></div>
+    <div class="dir" id="dir">等待感測器</div>
+    <div class="hint" id="hint"></div>
+    <div class="meta">
+      <span class="num" id="deg">--°</span>
+      <span id="perM">每公尺 -- mm</span>
+      <span id="stab"></span>
+    </div>
+  </section>
+
+  <figure class="gauge" style="margin-left:0;margin-right:0">
+    <svg viewBox="0 0 300 210" role="img" aria-label="牆板傾斜示意，圖形已放大">
+      <defs>
+        <pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+          <line x1="0" y1="0" x2="0" y2="8" style="stroke:var(--wall)" stroke-width="3"/>
+        </pattern>
+      </defs>
+      <polygon class="cone" points="150,205 90,12 210,12"/>
+      <polygon id="wallFill" points="150,205 150,12 300,12 300,205" fill="url(#hatch)"/>
+      <line id="wallLine" class="wl" x1="150" y1="205" x2="150" y2="12"/>
+      <line class="plumb" x1="150" y1="2" x2="150" y2="176" stroke-dasharray="6 5"/>
+      <polygon class="bob" points="143,176 157,176 150,194"/>
+    </svg>
+    <figcaption>藍色虛線是鉛垂線，綠色範圍是容許偏差，斜線那側是牆板（圖形已放大）</figcaption>
+  </figure>
+
+  <p class="inplane" id="inplane">面內（沿牆方向）偏差 -- mm</p>
+
+  <div class="actions">
+    <button class="btn" id="lockBtn">鎖定讀數</button>
+    <button class="btn" id="zeroBtn">歸零校正</button>
+  </div>
+  <div class="recordRow">
+    <input id="loc" placeholder="位置，例如 3F 東側 W12" maxlength="40" aria-label="量測位置">
+    <button class="btn primary" id="recBtn">記錄</button>
+  </div>
+
+  <section class="records">
+    <div class="rhead">
+      <h2>量測紀錄</h2>
+      <div><button class="link" id="copyBtn">複製全部</button><button class="link danger" id="clearBtn">清除</button></div>
+    </div>
+    <ol id="recList"></ol>
+    <p class="empty" id="recEmpty">還沒有紀錄。量好一面牆就按「記錄」。</p>
+    <textarea id="copyBox" hidden aria-hidden="true"></textarea>
+  </section>
+
+  <details class="settings">
+    <summary>設定</summary>
+    <label>牆高（mm）<input type="number" id="hIn" inputmode="numeric" min="100" max="20000" step="10"></label>
+    <label>容許偏差（mm，依你們的規範設定）<input type="number" id="tolIn" inputmode="decimal" min="0.5" max="100" step="0.5"></label>
+    <div class="field">牆板在螢幕的哪一邊
+      <div class="seg" role="group" aria-label="牆板在螢幕的哪一邊">
+        <button data-side="left" aria-pressed="false">左邊</button>
+        <button data-side="right" aria-pressed="true">右邊</button>
+      </div>
+    </div>
+    <button class="btn ghost" id="unzeroBtn">清除校正</button>
+    <p class="note">手機感測器精度大約 0.1°，3 m 高的牆約等於 5 mm，所以讀數適合施工中邊調邊看。驗收請再用鉛錘或雷射墨線儀複核。手機從直尺上拆下再裝回，要重新校正。</p>
+  </details>
+</main>
+
+<script>
+(function(){
+  var $=function(id){return document.getElementById(id)};
+  var store={
+    get:function(k,d){try{var v=localStorage.getItem('wallplumb_'+k);return v===null?d:JSON.parse(v)}catch(e){return d}},
+    set:function(k,v){try{localStorage.setItem('wallplumb_'+k,JSON.stringify(v))}catch(e){}}
+  };
+  var cfg={h:store.get('h',3000),tol:store.get('tol',5),side:store.get('side','right'),zero:store.get('zero',null)};
+  var recs=store.get('recs',[]); if(!Array.isArray(recs))recs=[];
+  var D=Math.PI/180, WIN=45;
+  var buf=[], flip=null, source=null, lastSample=0, running=false, locked=null, calib=null, wakeLock=null;
+
+  function push(x,y,z,useFlip){
+    if(useFlip){
+      if(flip===null){var ay=Math.abs(y); if(ay>Math.abs(x)&&ay>Math.abs(z)&&ay>3) flip=y<0?-1:1;}
+      var f=flip||1; x*=f; y*=f; z*=f;
+    }
+    var s={phi:Math.atan2(-x,y)/D, psi:Math.atan2(z,Math.hypot(x,y))/D, up:y};
+    buf.push(s); if(buf.length>WIN) buf.shift();
+    if(calib) calib.push(s);
+    lastSample=performance.now();
+  }
+  function onMotion(e){
+    var a=e.accelerationIncludingGravity;
+    if(!a||a.x==null||a.y==null||a.z==null) return;
+    source='motion'; push(a.x,a.y,a.z,true);
+  }
+  function onOrient(e){
+    if(source==='motion'||e.beta==null||e.gamma==null) return;
+    source='orient';
+    var b=e.beta*D, g=e.gamma*D;
+    push(-Math.sin(g)*Math.cos(b), Math.sin(b), Math.cos(g)*Math.cos(b), false);
+  }
+  function avg(arr){
+    var n=arr.length; if(!n) return null;
+    var p=0,q=0,u=0,i; for(i=0;i<n;i++){p+=arr[i].phi;q+=arr[i].psi;u+=arr[i].up;}
+    var m=p/n, v=0; for(i=0;i<n;i++){v+=(arr[i].phi-m)*(arr[i].phi-m);}
+    return {phi:m, psi:q/n, up:u/n, sd:Math.sqrt(v/n)};
+  }
+  function current(){
+    var s=avg(buf); if(!s) return null;
+    var z=cfg.zero||{phi:0,psi:0};
+    return {phi:s.phi-z.phi, psi:s.psi-z.psi, psiRaw:s.psi, up:s.up, sd:s.sd};
+  }
+  function fmt(n,d){d=d==null?1:d; var p=Math.pow(10,d); return (Math.round(n*p)/p).toFixed(d);}
+  function evalR(r){
+    var mm=cfg.h*Math.tan(r.phi*D), inMm=cfg.h*Math.tan(r.psi*D), a=Math.abs(mm);
+    var st=a<=cfg.tol?'ok':(a<=cfg.tol*1.5?'warn':'bad');
+    var toward=cfg.side==='right'?mm>0:mm<0;
+    return {mm:mm,inMm:inMm,a:a,st:st,toward:toward,plumb:a<0.05};
+  }
+  var ST={ok:'合格',warn:'注意',bad:'超出'};
+
+  function setWarn(t){var w=$('warn'); if(t){w.textContent=t;w.hidden=false;}else{w.hidden=true;}}
+  var persistentWarn='';
+
+  function render(){
+    var r=locked||current();
+    if(!r) return;
+    var e=evalR(r);
+    var w='';
+    if(!locked){
+      if(r.up<0) w='手機拿反了，請讓手機頂端朝上。';
+      else if(Math.abs(r.psiRaw)>60) w='手機是平放的，請直立綁在直尺側面。';
+      else if(Math.abs(r.psiRaw)>25) w='手機沒有站直，請確認螢幕跟牆面垂直。';
+    }
+    setWarn(w||persistentWarn);
+    var ro=$('readout');
+    ro.dataset.status=e.st;
+    ro.classList.toggle('locked',!!locked);
+    $('lockTag').hidden=!locked;
+    $('st').textContent=ST[e.st];
+    $('mm').textContent=fmt(e.a);
+    if(e.plumb){$('dir').textContent='垂直';$('hint').textContent='';}
+    else if(e.toward){$('dir').textContent='上端往牆內側倒';$('hint').textContent='調整：上端往外拉 '+fmt(e.a)+' mm';}
+    else {$('dir').textContent='上端往外側倒（朝你）';$('hint').textContent='調整：上端往牆內推 '+fmt(e.a)+' mm';}
+    $('deg').textContent=fmt(Math.abs(r.phi),2)+'°';
+    $('perM').textContent='每公尺 '+fmt(e.a/cfg.h*1000)+' mm';
+    $('stab').textContent=locked?'':(r.sd<0.03?'讀數穩定':(r.sd<0.1?'微晃':'晃動中，扶穩'));
+    var ia=Math.abs(e.inMm);
+    $('inplane').textContent='面內（沿牆方向）偏差 '+fmt(ia)+' mm'+(ia<0.05?'':(e.inMm>0?'，頂端偏向手機背面那側':'，頂端偏向螢幕那側'));
+    var dx=Math.max(-140,Math.min(140,(Math.tan(r.phi*D)*cfg.h)/cfg.tol*60));
+    var tx=150+dx;
+    var wlEl=$('wallLine'); wlEl.setAttribute('x2',tx.toFixed(1)); wlEl.setAttribute('class','wl '+e.st);
+    $('wallFill').setAttribute('points', cfg.side==='right'
+      ? '150,205 '+tx.toFixed(1)+',12 300,12 300,205'
+      : '0,12 '+tx.toFixed(1)+',12 150,205 0,205');
+  }
+  var lastRender=0;
+  function loop(t){ if(t-lastRender>100){lastRender=t; render();} requestAnimationFrame(loop); }
+
+  async function requestWake(){ try{ if('wakeLock' in navigator){ wakeLock=await navigator.wakeLock.request('screen'); } }catch(e){} }
+  document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible'&&running) requestWake(); });
+
+  async function start(){
+    try{
+      if(typeof DeviceMotionEvent!=='undefined'&&typeof DeviceMotionEvent.requestPermission==='function'){
+        var res=await DeviceMotionEvent.requestPermission();
+        if(res!=='granted'){ setWarn('沒有取得動作感測器權限。請關閉頁面重新開啟，跳出詢問時按「允許」。'); return; }
+      }
+    }catch(err){ setWarn('無法取得感測器權限。請用 Safari 直接開啟這個網址再試一次。'); return; }
+    window.addEventListener('devicemotion',onMotion);
+    window.addEventListener('deviceorientation',onOrient);
+    running=true; $('startCard').hidden=true; requestWake();
+    setTimeout(function(){
+      if(!lastSample){ persistentWarn='收不到手機的傾斜感測器資料。如果是在 Claude 對話裡開啟，請改用部署後的網址用 Safari 開啟；電腦沒有這個感測器。'; setWarn(persistentWarn); }
+    },2500);
+    requestAnimationFrame(loop);
+  }
+
+  function updateCal(){
+    var c=$('calChip');
+    if(cfg.zero){c.textContent='已校正';c.className='chip on';}
+    else{c.textContent='未校正';c.className='chip attn';}
+  }
+  function updateLock(){ $('lockBtn').textContent=locked?'解除鎖定':'鎖定讀數'; }
+
+  $('startBtn').addEventListener('click',start);
+  $('lockBtn').addEventListener('click',function(){
+    if(locked){locked=null;}
+    else{ var r=current(); if(!r){setWarn('還沒有讀數，請先按「開始量測」。');return;} locked=r; }
+    updateLock(); render();
+  });
+  $('zeroBtn').addEventListener('click',function(){
+    if(!running){setWarn('請先按「開始量測」。');return;}
+    $('calPanel').hidden=false; $('calPanel').scrollIntoView({block:'nearest'});
+  });
+  $('calCancel').addEventListener('click',function(){$('calPanel').hidden=true;});
+  $('calGo').addEventListener('click',function(){
+    locked=null; updateLock();
+    calib=[]; var go=$('calGo'), left=2; go.disabled=true; $('calCancel').disabled=true; go.textContent='校正中 2';
+    var iv=setInterval(function(){
+      left--; if(left>0){go.textContent='校正中 '+left;return;}
+      clearInterval(iv);
+      var ss=calib; calib=null; go.disabled=false; $('calCancel').disabled=false; go.textContent='開始校正';
+      if(ss.length<10){setWarn('校正失敗：沒有收到足夠的感測器資料。');return;}
+      var m=avg(ss);
+      if(m.sd>0.15){setWarn('校正失敗：晃動太大，請扶穩後再校正一次。');return;}
+      cfg.zero={phi:m.phi,psi:m.psi}; store.set('zero',cfg.zero);
+      $('calPanel').hidden=true; updateCal(); setWarn('');
+    },1000);
+  });
+  $('unzeroBtn').addEventListener('click',function(){cfg.zero=null;store.set('zero',null);updateCal();render();});
+
+  function timeStr(t){var d=new Date(t);function p(n){return (n<10?'0':'')+n;}return (d.getMonth()+1)+'/'+d.getDate()+' '+p(d.getHours())+':'+p(d.getMinutes());}
+  function dirShort(r){return r.a<0.05?'垂直':(r.toward?'上端往牆內倒':'上端往外倒');}
+  function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  function renderRecs(){
+    var ol=$('recList'); ol.innerHTML='';
+    $('recEmpty').hidden=recs.length>0;
+    recs.slice().reverse().forEach(function(r){
+      var li=document.createElement('li');
+      li.innerHTML='<span class="rmm num '+r.st+'">'+fmt(r.a)+'</span>'+
+        '<span class="rloc">'+esc(r.loc||'未填位置')+'　'+ST[r.st]+'</span>'+
+        '<span class="rsub">'+timeStr(r.t)+'，'+dirShort(r)+'，'+fmt(Math.abs(r.deg),2)+'°，牆高 '+r.h+' mm</span>';
+      ol.appendChild(li);
+    });
+  }
+  $('recBtn').addEventListener('click',function(){
+    var r=locked||current();
+    if(!r){setWarn('還沒有讀數，請先按「開始量測」。');return;}
+    var e=evalR(r);
+    recs.push({t:Date.now(),loc:$('loc').value.trim(),h:cfg.h,a:Math.round(e.a*10)/10,toward:e.toward,st:e.st,deg:Math.round(r.phi*100)/100});
+    if(recs.length>300) recs=recs.slice(-300);
+    store.set('recs',recs); renderRecs();
+    var b=$('recBtn'); b.textContent='已記錄'; setTimeout(function(){b.textContent='記錄';},1200);
+  });
+  $('copyBtn').addEventListener('click',function(){
+    if(!recs.length) return;
+    var txt='牆板垂直量測紀錄\n'+recs.map(function(r){
+      return timeStr(r.t)+'　'+(r.loc||'未填位置')+'　偏差 '+fmt(r.a)+' mm　'+dirShort(r)+'（'+fmt(Math.abs(r.deg),2)+'°，牆高 '+r.h+' mm）　'+ST[r.st];
+    }).join('\n');
+    var b=$('copyBtn');
+    function done(){b.textContent='已複製';setTimeout(function(){b.textContent='複製全部';},1500);}
+    function fallback(){var ta=$('copyBox');ta.hidden=false;ta.value=txt;ta.select();try{document.execCommand('copy');done();}catch(e){}ta.hidden=true;}
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(done,fallback);}else{fallback();}
+  });
+  var clearArmed=null;
+  $('clearBtn').addEventListener('click',function(){
+    var b=$('clearBtn');
+    if(!recs.length) return;
+    if(!clearArmed){b.textContent='確定清除？';clearArmed=setTimeout(function(){clearArmed=null;b.textContent='清除';},3000);return;}
+    clearTimeout(clearArmed);clearArmed=null;b.textContent='清除';
+    recs=[];store.set('recs',recs);renderRecs();
+  });
+
+  var hIn=$('hIn'), tolIn=$('tolIn');
+  hIn.value=cfg.h; tolIn.value=cfg.tol; $('hLbl').textContent=cfg.h;
+  hIn.addEventListener('change',function(){var v=parseFloat(hIn.value);if(!(v>=100&&v<=20000)){hIn.value=cfg.h;return;}cfg.h=Math.round(v);store.set('h',cfg.h);$('hLbl').textContent=cfg.h;render();});
+  tolIn.addEventListener('change',function(){var v=parseFloat(tolIn.value);if(!(v>=0.5&&v<=100)){tolIn.value=cfg.tol;return;}cfg.tol=v;store.set('tol',v);render();});
+  var segBtns=document.querySelectorAll('.seg button');
+  function updateSeg(){segBtns.forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.side===cfg.side));});}
+  segBtns.forEach(function(b){b.addEventListener('click',function(){cfg.side=b.dataset.side;store.set('side',cfg.side);updateSeg();render();});});
+  updateSeg(); updateCal(); updateLock(); renderRecs();
+
+  if('serviceWorker' in navigator && location.protocol==='https:' && !/claude/i.test(location.hostname)){
+    navigator.serviceWorker.register('sw.js').catch(function(){});
+  }
+})();
+</script>
+</body>
+</html>

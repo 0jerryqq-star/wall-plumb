@@ -205,7 +205,7 @@ summary{font-size:16px;font-weight:700;padding:12px 0;cursor:pointer}
   };
   var cfg={h:store.get('h',3000),tol:store.get('tol',5),side:store.get('side','right'),zero:store.get('zero',null)};
   var recs=store.get('recs',[]); if(!Array.isArray(recs))recs=[];
-  var D=Math.PI/180, WIN=45;
+  var D=Math.PI/180, WIN_MS=2000;
   var buf=[], flip=null, source=null, lastSample=0, running=false, locked=null, calib=null, wakeLock=null;
 
   function push(x,y,z,useFlip){
@@ -213,10 +213,11 @@ summary{font-size:16px;font-weight:700;padding:12px 0;cursor:pointer}
       if(flip===null){var ay=Math.abs(y); if(ay>Math.abs(x)&&ay>Math.abs(z)&&ay>3) flip=y<0?-1:1;}
       var f=flip||1; x*=f; y*=f; z*=f;
     }
-    var s={phi:Math.atan2(-x,y)/D, psi:Math.atan2(z,Math.hypot(x,y))/D, up:y};
-    buf.push(s); if(buf.length>WIN) buf.shift();
+    var now=performance.now();
+    var s={phi:Math.atan2(-x,y)/D, psi:Math.atan2(z,Math.hypot(x,y))/D, up:y, t:now};
+    buf.push(s); while(buf.length&&now-buf[0].t>WIN_MS) buf.shift();
     if(calib) calib.push(s);
-    lastSample=performance.now();
+    lastSample=now;
   }
   function onMotion(e){
     var a=e.accelerationIncludingGravity;
